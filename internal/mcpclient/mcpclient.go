@@ -9,6 +9,7 @@ import (
 	"io"
 	"net/http"
 	"strings"
+	"sync"
 
 	"github.com/modelcontextprotocol/go-sdk/auth"
 	"github.com/modelcontextprotocol/go-sdk/mcp"
@@ -107,14 +108,19 @@ func (h *StoredHandler) Authorize(_ context.Context, _ *http.Request, resp *http
 }
 
 // persistingTokenSource writes a token back to the credential store whenever
-// the underlying source returns a new access token.
+// the underlying source returns a new access token. mu makes Token safe for
+// concurrent use, as oauth2.TokenSource requires, and keeps one refresh from
+// being persisted twice.
 type persistingTokenSource struct {
+	mu   sync.Mutex
 	base oauth2.TokenSource
 	last string
 	save func(credentials.Token) error
 }
 
 func (p *persistingTokenSource) Token() (*oauth2.Token, error) {
+	p.mu.Lock()
+	defer p.mu.Unlock()
 	tok, err := p.base.Token()
 	if err != nil {
 		return nil, fmt.Errorf("%w: refreshing the access token failed: %w; run `granola login`", ErrSessionRejected, err)
