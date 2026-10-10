@@ -1,0 +1,85 @@
+{
+  "tools": [
+    {
+      "name": "query_granola_meetings",
+      "title": "Query meetings",
+      "description": "Query Granola about the user's meetings using natural language. Returns a tailored response with inline citation links.",
+      "annotations": {"destructiveHint": false, "idempotentHint": false, "openWorldHint": false, "readOnlyHint": true},
+      "inputSchema": {
+        "$schema": "http://json-schema.org/draft-07/schema#",
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "document_ids": {"type": "array", "items": {"type": "string", "format": "uuid"}, "description": "Optional list of specific meeting IDs to limit context to"},
+          "query": {"type": "string", "minLength": 1, "description": "The query to run on Granola meeting notes"}
+        },
+        "required": ["query"]
+      }
+    },
+    {
+      "name": "list_meetings",
+      "title": "List meetings",
+      "description": "List the user's Granola meeting notes within a time range. Returns meeting titles, metadata, and note URLs.",
+      "annotations": {"destructiveHint": false, "idempotentHint": false, "openWorldHint": false, "readOnlyHint": true},
+      "inputSchema": {
+        "$schema": "http://json-schema.org/draft-07/schema#",
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "involvement": {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+              "captured_by_me": {"type": "boolean"},
+              "listed_as_participant": {"type": "boolean"}
+            }
+          },
+          "time_range": {"type": "string", "enum": ["this_week", "last_week", "last_30_days"], "default": "last_30_days"},
+          "workspace_only": {"type": "boolean", "const": true}
+        }
+      }
+    },
+    {
+      "name": "list_meeting_folders",
+      "title": "List meeting folders",
+      "description": "List the user's Granola meeting folders. Returns folder ID, title, description, and note count including nested folders.",
+      "annotations": {"destructiveHint": false, "idempotentHint": false, "openWorldHint": false, "readOnlyHint": true},
+      "inputSchema": {"$schema": "http://json-schema.org/draft-07/schema#", "type": "object", "properties": {}}
+    },
+    {
+      "name": "get_meetings",
+      "title": "Read meetings",
+      "description": "Get detailed meeting information for one or more Granola meetings by ID.\nReturns private notes, AI-generated summary, attendees, metadata, and note URLs.",
+      "annotations": {"destructiveHint": false, "idempotentHint": true, "openWorldHint": false, "readOnlyHint": true},
+      "inputSchema": {
+        "$schema": "http://json-schema.org/draft-07/schema#",
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "meeting_ids": {"type": "array", "items": {"type": "string", "format": "uuid"}, "minItems": 1, "maxItems": 10, "description": "Array of meeting UUIDs (max 10)"}
+        },
+        "required": ["meeting_ids"]
+      }
+    },
+    {
+      "name": "get_meeting_transcript",
+      "title": "Read meeting transcript",
+      "description": "Get the full transcript for a specific Granola meeting by ID.",
+      "annotations": {"destructiveHint": false, "idempotentHint": true, "openWorldHint": false, "readOnlyHint": true},
+      "inputSchema": {
+        "$schema": "http://json-schema.org/draft-07/schema#",
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {"meeting_id": {"type": "string", "format": "uuid", "description": "Meeting UUID"}},
+        "required": ["meeting_id"]
+      }
+    },
+    {
+      "name": "get_account_info",
+      "title": "Get account info",
+      "description": "Get the email, active workspace, and effective note-access scopes for the Granola account currently connected to this MCP session.",
+      "annotations": {"destructiveHint": false, "idempotentHint": true, "openWorldHint": false, "readOnlyHint": true},
+      "inputSchema": {"$schema": "http://json-schema.org/draft-07/schema#", "type": "object", "properties": {}}
+    }
+  ]
+}

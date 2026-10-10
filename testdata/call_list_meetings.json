@@ -1,0 +1,8 @@
+{
+  "content": [
+    {
+      "type": "text",
+      "text": "<access_notice>Results include personal notes from the last 30 days on this plan.</access_notice>\n\n<meetings_data from=\"Jan 20, 2026\" to=\"Jan 27, 2026\" count=\"2\">\n<meeting id=\"0b1f6c2e-4d3a-4f5b-9c8d-7e6f5a4b3c2d\" title=\"Quarterly yoghurt budget review\" date=\"Jan 27, 2026 10:30 AM EST\" captured_by_me=\"true\" listed_as_participant=\"true\" is_workspace_visible=\"false\" url=\"https://notes.granola.ai/d/0b1f6c2e-4d3a-4f5b-9c8d-7e6f5a4b3c2d\">\n    <known_participants>\n    Oat Benson (note creator) <oat@granola.ai>\n    Raisin Patel <raisin@granola.ai>\n    </known_participants>\n</meeting>\n<meeting id=\"1c2a7d3f-5e4b-4a6c-8d9e-8f7a6b5c4d3e\" title=\"Almond milk pivot sync\" date=\"Jan 22, 2026 2:00 PM EST\" captured_by_me=\"true\" listed_as_participant=\"false\" is_workspace_visible=\"false\" url=\"https://notes.granola.ai/d/1c2a7d3f-5e4b-4a6c-8d9e-8f7a6b5c4d3e\">\n    <known_participants>\n    Oat Benson (note creator) <oat@granola.ai>\n    </known_participants>\n</meeting>\n</meetings_data>"
+    }
+  ]
+}

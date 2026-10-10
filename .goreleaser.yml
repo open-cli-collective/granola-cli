@@ -1,0 +1,153 @@
+version: 2
+
+project_name: granola-cli
+
+before:
+  hooks:
+    # a mutating tidy must fail the release, not build from a dirty tree
+    - sh -c "go mod tidy && git diff --exit-code go.mod go.sum"
+
+builds:
+  # darwin builds with cgo so the credstore Keychain backend is compiled in;
+  # without it every credential operation fails on macOS. linux/windows stay
+  # cgo-off static (their keyring backends are pure Go).
+  - id: granola-darwin
+    main: .
+    binary: granola
+    # Standard keyring opt-out tags (cli-common working-with-secrets.md §1.10).
+    flags:
+      - -tags=keyring_no1password,keyring_nopassage
+    env:
+      - CGO_ENABLED=1
+    goos:
+      - darwin
+    goarch:
+      - amd64
+      - arm64
+    overrides:
+      - goos: darwin
+        goarch: amd64
+        goamd64: v1
+        env:
+          - CGO_ENABLED=1
+          - "CC=xcrun clang -arch x86_64"
+      - goos: darwin
+        goarch: arm64
+        goarm64: v8.0
+        env:
+          - CGO_ENABLED=1
+          - "CC=xcrun clang -arch arm64"
+    ldflags:
+      - -s -w
+      - -X github.com/open-cli-collective/granola-cli/internal/version.Version={{.Version}}
+      - -X github.com/open-cli-collective/granola-cli/internal/version.Commit={{.Commit}}
+      - -X github.com/open-cli-collective/granola-cli/internal/version.Date={{.Date}}
+    # macOS code-signing with a stable designated requirement so Keychain
+    # "Always Allow" survives upgrades (cli-common distribution.md §2A).
+    hooks:
+      post:
+        - cmd: bash -c 'f="${CODESIGN_DARWIN_SCRIPT:-}"; if [ -z "$f" ]; then echo "skip codesign (CODESIGN_DARWIN_SCRIPT unset, local build)"; exit 0; fi; [ -x "$f" ] || { echo "CODESIGN_DARWIN_SCRIPT not executable ($f)" >&2; exit 1; }; exec "$f" "$0" "$1"' "{{ .Path }}" "{{ .Os }}"
+  - id: granola-unix-win
+    main: .
+    binary: granola
+    flags:
+      - -tags=keyring_no1password,keyring_nopassage
+    env:
+      - CGO_ENABLED=0
+    goos:
+      - linux
+      - windows
+    goarch:
+      - amd64
+      - arm64
+    ldflags:
+      - -s -w
+      - -X github.com/open-cli-collective/granola-cli/internal/version.Version={{.Version}}
+      - -X github.com/open-cli-collective/granola-cli/internal/version.Commit={{.Commit}}
+      - -X github.com/open-cli-collective/granola-cli/internal/version.Date={{.Date}}
+
+archives:
+  - formats:
+      - tar.gz
+    name_template: "granola_v{{ .Version }}_{{ .Os }}_{{ .Arch }}"
+    format_overrides:
+      - goos: windows
+        formats:
+          - zip
+    files:
+      - LICENSE
+      - README.md
+
+nfpms:
+  - id: granola
+    ids:
+      - granola-unix-win
+    package_name: granola
+    vendor: Open CLI Collective
+    homepage: https://github.com/open-cli-collective/granola-cli
+    maintainer: Open CLI Collective <https://github.com/open-cli-collective>
+    description: Read-only command-line interface for Granola meeting notes
+    license: MIT
+    formats:
+      - deb
+      - rpm
+      - archlinux
+    # Keep tar entry timestamps aligned with pacman integrity metadata.
+    mtime: "{{ .CommitDate }}"
+    bindir: /usr/bin
+    contents:
+      - src: LICENSE
+        dst: /usr/share/licenses/granola/LICENSE
+
+checksum:
+  name_template: checksums.txt
+  algorithm: sha256
+
+# The cask is named granola-cli because Homebrew's own "granola" cask is the
+# Granola desktop app. skip_upload: the reusable release workflow commits the
+# rendered cask to the tap.
+homebrew_casks:
+  - name: granola-cli
+    binaries: [granola]
+    skip_upload: true
+    repository:
+      owner: open-cli-collective
+      name: homebrew-tap
+    homepage: https://github.com/open-cli-collective/granola-cli
+    description: "Read-only command-line interface for Granola meeting notes"
+    hooks:
+      post:
+        install: |
+          system_command "/usr/bin/xattr", args: ["-dr", "com.apple.quarantine", "#{staged_path}/granola"]
+    caveats: |
+      To sign in, run:
+        granola login
+
+      Your Granola session is stored in the OS keyring (Keychain on macOS,
+      Credential Manager on Windows, Secret Service on Linux).
+
+changelog:
+  use: github
+  sort: asc
+  groups:
+    - title: Features
+      regexp: "^.*feat.*:.*$"
+      order: 0
+    - title: Bug Fixes
+      regexp: "^.*fix.*:.*$"
+      order: 1
+    - title: Other
+      order: 999
+  filters:
+    exclude:
+      - "^docs:"
+      - "^test:"
+      - "^ci:"
+      - "^chore:"
+
+release:
+  github:
+    owner: open-cli-collective
+    name: granola-cli
+  # idempotent re-runs overwrite the same assets
+  replace_existing_artifacts: true

@@ -1,0 +1,73 @@
+version: "2"
+
+run:
+  go: "1.26"
+  timeout: 5m
+
+linters:
+  enable:
+    - errcheck
+    - govet
+    - staticcheck
+    - unused
+    - misspell
+    - gosec
+    - ineffassign
+    - goconst
+    - revive
+    - errorlint
+    - exhaustive
+  settings:
+    revive:
+      # Explicit rule list so behavior is stable across golangci-lint versions.
+      rules:
+        - name: unused-parameter
+    errcheck:
+      exclude-functions:
+        - io.Closer.Close
+        - (*net/http.Response).Body.Close
+        - (net/http.ResponseWriter).Write
+        - fmt.Fprint
+        - fmt.Fprintf
+        - fmt.Fprintln
+        - (*github.com/spf13/cobra.Command).MarkFlagRequired
+        - (*github.com/spf13/pflag.FlagSet).MarkDeprecated
+    misspell:
+      locale: US
+    goconst:
+      min-len: 3
+      min-occurrences: 5
+    gosec:
+      excludes:
+        - G101
+        - G104
+        - G204
+        - G304
+        - G107
+        - G703
+  exclusions:
+    rules:
+      - path: _test\.go
+        linters:
+          - errcheck
+          - gosec
+          - goconst
+          - errorlint
+      - linters:
+          - errcheck
+        source: "defer.*\\.Close\\(\\)"
+      - linters:
+          - gosec
+        text: "G704"
+      - linters:
+          - staticcheck
+        text: "QF1012"
+
+formatters:
+  enable:
+    - gofmt
+    - goimports
+  settings:
+    goimports:
+      local-prefixes:
+        - github.com/open-cli-collective/granola-cli
