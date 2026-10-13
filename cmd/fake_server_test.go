@@ -73,6 +73,9 @@ type fakeGranola struct {
 	challenge    string
 	refreshCount int
 	issuedToken  string
+	// refreshStatus, when set, makes the token endpoint answer refresh
+	// requests with this HTTP status.
+	refreshStatus int
 }
 
 type toolCall struct {
@@ -198,6 +201,10 @@ func newFakeGranola(t *testing.T) *fakeGranola {
 				"token_type": "Bearer", "expires_in": 3600,
 			})
 		case "refresh_token":
+			if f.refreshStatus != 0 {
+				w.WriteHeader(f.refreshStatus)
+				return
+			}
 			if r.Form.Get("refresh_token") != testRefreshToken {
 				w.Header().Set("Content-Type", "application/json")
 				w.WriteHeader(http.StatusBadRequest)

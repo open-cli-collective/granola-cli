@@ -123,7 +123,10 @@ func (p *persistingTokenSource) Token() (*oauth2.Token, error) {
 	defer p.mu.Unlock()
 	tok, err := p.base.Token()
 	if err != nil {
-		return nil, fmt.Errorf("%w: refreshing the access token failed: %w; run `granola login`", ErrSessionRejected, err)
+		if refreshRejected(err) {
+			return nil, fmt.Errorf("%w: refreshing the access token failed: %w; run `granola login`", ErrSessionRejected, err)
+		}
+		return nil, fmt.Errorf("refreshing the access token failed: %w", err)
 	}
 	if tok.AccessToken != p.last {
 		if err := p.save(FromOAuth2(tok)); err != nil {
@@ -132,6 +135,19 @@ func (p *persistingTokenSource) Token() (*oauth2.Token, error) {
 		p.last = tok.AccessToken
 	}
 	return tok, nil
+}
+
+// refreshRejected reports whether the token endpoint refused the refresh
+// token itself (a 4xx other than 429, such as invalid_grant for a revoked or
+// expired grant), which only a new sign-in fixes. Network failures, timeouts,
+// rate limits and 5xx responses are transient and keep their own exit codes.
+func refreshRejected(err error) bool {
+	var re *oauth2.RetrieveError
+	if !errors.As(err, &re) || re.Response == nil {
+		return false
+	}
+	code := re.Response.StatusCode
+	return code >= 400 && code < 500 && code != http.StatusTooManyRequests
 }
 
 // ToOAuth2 converts a stored token.

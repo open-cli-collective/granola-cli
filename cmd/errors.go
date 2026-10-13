@@ -5,6 +5,7 @@ import (
 	"fmt"
 
 	"github.com/modelcontextprotocol/go-sdk/jsonrpc"
+	"golang.org/x/oauth2"
 
 	"github.com/open-cli-collective/granola-cli/internal/clierr"
 	"github.com/open-cli-collective/granola-cli/internal/credentials"
@@ -16,7 +17,8 @@ func usageErrorf(format string, args ...any) error {
 }
 
 // classifyError maps errors to the family's exit codes: 2 usage, 3 auth or
-// config, 5 upstream (the server returned an error or a tool reported one).
+// config, 5 upstream (the server returned an error, a tool reported one, or
+// the token endpoint failed without rejecting the session).
 func classifyError(err error) error {
 	if err == nil || clierr.CodeOf(err) != int(clierr.CodeGeneric) {
 		return err
@@ -28,7 +30,8 @@ func classifyError(err error) error {
 	// message that happens to contain a cobra phrase is not misread.
 	var toolErr *mcpclient.ToolError
 	var rpcErr *jsonrpc.Error
-	if errors.As(err, &toolErr) || errors.As(err, &rpcErr) {
+	var tokenErr *oauth2.RetrieveError
+	if errors.As(err, &toolErr) || errors.As(err, &rpcErr) || errors.As(err, &tokenErr) {
 		return clierr.Wrap(clierr.CodeUpstream, err, "")
 	}
 	if clierr.LooksLikeUsage(err) {
