@@ -31,6 +31,11 @@ const protocolVersion = "2025-11-25"
 // ErrSessionRejected means the server refused the stored session.
 var ErrSessionRejected = errors.New("the Granola session was rejected")
 
+// ErrTokenRefresh means refreshing the access token failed for a reason other
+// than the server rejecting the session: the token endpoint was unreachable,
+// timed out, rate limited the request, or returned a 5xx.
+var ErrTokenRefresh = errors.New("refreshing the access token failed")
+
 // Options configures a connection.
 type Options struct {
 	// Endpoint overrides the server URL (tests only).
@@ -126,7 +131,7 @@ func (p *persistingTokenSource) Token() (*oauth2.Token, error) {
 		if refreshRejected(err) {
 			return nil, fmt.Errorf("%w: refreshing the access token failed: %w; run `granola login`", ErrSessionRejected, err)
 		}
-		return nil, fmt.Errorf("refreshing the access token failed: %w", err)
+		return nil, fmt.Errorf("%w: %w", ErrTokenRefresh, err)
 	}
 	if tok.AccessToken != p.last {
 		if err := p.save(FromOAuth2(tok)); err != nil {

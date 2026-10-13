@@ -5,7 +5,6 @@ import (
 	"fmt"
 
 	"github.com/modelcontextprotocol/go-sdk/jsonrpc"
-	"golang.org/x/oauth2"
 
 	"github.com/open-cli-collective/granola-cli/internal/clierr"
 	"github.com/open-cli-collective/granola-cli/internal/credentials"
@@ -30,8 +29,7 @@ func classifyError(err error) error {
 	// message that happens to contain a cobra phrase is not misread.
 	var toolErr *mcpclient.ToolError
 	var rpcErr *jsonrpc.Error
-	var tokenErr *oauth2.RetrieveError
-	if errors.As(err, &toolErr) || errors.As(err, &rpcErr) || errors.As(err, &tokenErr) {
+	if errors.Is(err, mcpclient.ErrTokenRefresh) || errors.As(err, &toolErr) || errors.As(err, &rpcErr) {
 		return clierr.Wrap(clierr.CodeUpstream, err, "")
 	}
 	if clierr.LooksLikeUsage(err) {
