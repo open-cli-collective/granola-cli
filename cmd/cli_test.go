@@ -1,8 +1,12 @@
 package cmd
 
 import (
+	"bytes"
 	"encoding/json"
+	"fmt"
 	"net/http"
+	"os"
+	"path/filepath"
 	"reflect"
 	"strings"
 	"testing"
@@ -93,6 +97,8 @@ func TestUsageErrorsMakeNoRequest(t *testing.T) {
 		{"meetings", "get"},
 		{"meetings", "get", "a", "b", "c", "d", "e", "f", "g", "h", "i", "j", "k"},
 		{"meetings", "query", "  "},
+		{"meetings", "attachments", "a"},
+		{"meetings", "attachments", "a", "b", "c", "d", "e", "f", "g"},
 		{"tools", "call", "list_meetings", "--args", "not json"},
 	}
 	for _, args := range cases {
@@ -203,7 +209,7 @@ func TestToolsListGetAndCall(t *testing.T) {
 		t.Fatalf("tools list exit %d", code)
 	}
 	lines := strings.Split(strings.TrimSpace(stdout), "\n")
-	if lines[0] != "NAME | DESCRIPTION" || len(lines) != 7 {
+	if lines[0] != "NAME | DESCRIPTION" || len(lines) != 8 {
 		t.Fatalf("unexpected table:\n%s", stdout)
 	}
 	mustContain(t, stdout, "get_meetings | Get detailed meeting information for one or more Granola meetings by ID.\n")
@@ -485,5 +491,94 @@ func TestVersionAndHelp(t *testing.T) {
 	_, _, code = runCLI(t, "nope")
 	if code != 2 {
 		t.Fatalf("unknown command exit %d, want 2", code)
+	}
+}
+
+func TestMeetingsAttachmentsSavesImagesInOrder(t *testing.T) {
+	f := loggedIn(t)
+	f.results["get_meeting_attachment"] = "call_get_meeting_attachment.json"
+	dir := filepath.Join(t.TempDir(), "shots")
+	meeting := "0b1f6c2e-4d3a-4f5b-9c8d-7e6f5a4b3c2d"
+	ids := []string{"5d2e8f1a-3b4c-4d5e-8f6a-7b8c9d0e1f2a", "6e3f9a2b-4c5d-4e6f-9a7b-8c9d0e1f2a3b"}
+	stdout, stderr, code := runCLI(t, append([]string{"meetings", "attachments", meeting}, append(ids, "--out-dir", dir)...)...)
+	if code != 0 {
+		t.Fatalf("exit %d, stderr: %s", code, stderr)
+	}
+	call := f.lastCall()
+	want := map[string]any{"meeting_id": meeting, "attachment_ids": []any{ids[0], ids[1]}}
+	if call.Name != "get_meeting_attachment" || !reflect.DeepEqual(call.Args, want) {
+		t.Fatalf("call = %s %v, want get_meeting_attachment %v", call.Name, call.Args, want)
+	}
+
+	res := fixtureResult(t, "call_get_meeting_attachment.json")
+	png := filepath.Join(dir, meeting+"-1.png")
+	jpg := filepath.Join(dir, meeting+"-2.jpg")
+	wantOut := fmt.Sprintf("Saved %s (image/png, 21 bytes)\n%s\nSaved %s (image/jpeg, 22 bytes)\n%s\n",
+		png, res.Content[1].(*mcp.TextContent).Text, jpg, res.Content[3].(*mcp.TextContent).Text)
+	if stdout != wantOut {
+		t.Fatalf("stdout = %q, want %q", stdout, wantOut)
+	}
+	for i, path := range []string{png, jpg} {
+		got, err := os.ReadFile(path)
+		if err != nil {
+			t.Fatal(err)
+		}
+		if !bytes.Equal(got, res.Content[i*2].(*mcp.ImageContent).Data) {
+			t.Fatalf("%s does not hold the image bytes", path)
+		}
+		info, _ := os.Stat(path)
+		if info.Mode().Perm() != 0o600 {
+			t.Fatalf("%s mode %v, want 0600", path, info.Mode().Perm())
+		}
+	}
+}
+
+func TestMeetingsAttachmentsPartialFailureKeepsImages(t *testing.T) {
+	f := loggedIn(t)
+	f.results["get_meeting_attachment"] = "call_get_meeting_attachment_partial.json"
+	dir := t.TempDir()
+	meeting := "0b1f6c2e-4d3a-4f5b-9c8d-7e6f5a4b3c2d"
+	stdout, stderr, code := runCLI(t, "meetings", "attachments", meeting,
+		"5d2e8f1a-3b4c-4d5e-8f6a-7b8c9d0e1f2a", "00000000-0000-0000-0000-000000000000", "--out-dir", dir)
+	if code != 5 {
+		t.Fatalf("exit %d, want 5 (upstream)", code)
+	}
+	if _, err := os.Stat(filepath.Join(dir, meeting+"-1.png")); err != nil {
+		t.Fatalf("the image that succeeded was not saved: %v", err)
+	}
+	mustContain(t, stdout, "No attachment with this attachment_id in this meeting")
+	mustContain(t, stderr, "one or more attachments failed")
+}
+
+func TestMeetingsAttachmentsErrorWithoutImages(t *testing.T) {
+	f := loggedIn(t)
+	f.results["get_meeting_attachment"] = "call_get_meeting_attachment_not_found.json"
+	dir := filepath.Join(t.TempDir(), "unused")
+	stdout, stderr, code := runCLI(t, "meetings", "attachments", "0b1f6c2e-4d3a-4f5b-9c8d-7e6f5a4b3c2d",
+		"00000000-0000-0000-0000-000000000000", "--out-dir", dir)
+	if code != 5 {
+		t.Fatalf("exit %d, want 5 (upstream)", code)
+	}
+	if stdout != "" {
+		t.Fatalf("stdout should be empty on a tool error, got %q", stdout)
+	}
+	mustContain(t, stderr, "No attachment with this attachment_id in this meeting")
+	if _, err := os.Stat(dir); !os.IsNotExist(err) {
+		t.Fatalf("--out-dir was created with nothing to save")
+	}
+}
+
+func TestMeetingsAttachmentsJSONSavesNothing(t *testing.T) {
+	f := loggedIn(t)
+	f.results["get_meeting_attachment"] = "call_get_meeting_attachment.json"
+	dir := filepath.Join(t.TempDir(), "unused")
+	stdout, stderr, code := runCLI(t, "meetings", "attachments", "0b1f6c2e-4d3a-4f5b-9c8d-7e6f5a4b3c2d",
+		"5d2e8f1a-3b4c-4d5e-8f6a-7b8c9d0e1f2a", "--out-dir", dir, "--json")
+	if code != 0 {
+		t.Fatalf("exit %d, stderr: %s", code, stderr)
+	}
+	mustContain(t, stdout, `"type": "image"`)
+	if _, err := os.Stat(dir); !os.IsNotExist(err) {
+		t.Fatalf("--json wrote files")
 	}
 }

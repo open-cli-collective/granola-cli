@@ -21,7 +21,11 @@ or set the same `GOFLAGS`.
 ## Layout
 
 - `main.go` and `cmd/`: the Cobra command tree. Each tool command is a thin
-  wrapper that builds the tool's arguments and calls `runTool`.
+  wrapper that builds the tool's arguments and calls `runTool`. A command
+  whose result carries binary content (`meetings attachments`) calls
+  `withSession` itself and writes the files in `cmd/`; it still renders text
+  blocks with `mcpclient.RenderText` and reports error results with
+  `mcpclient.CheckError` or `mcpclient.ToolError`.
 - `internal/mcpclient/`: the MCP connection, the stored-session OAuth handler
   (silent refresh, no browser), request pacing, and result rendering.
 - `internal/oauthlogin/`: the one-time browser sign-in (discovery, Dynamic

@@ -1,0 +1,22 @@
+{
+  "content": [
+    {
+      "type": "image",
+      "data": "c3ludGhldGljLXBuZy1ieXRlcy0x",
+      "mimeType": "image/png"
+    },
+    {
+      "type": "text",
+      "text": "{\n  \"meeting_id\": \"0b1f6c2e-4d3a-4f5b-9c8d-7e6f5a4b3c2d\",\n  \"attachment_id\": \"5d2e8f1a-3b4c-4d5e-8f6a-7b8c9d0e1f2a\",\n  \"caption\": \"Shared screen: yoghurt budget by quarter\"\n}"
+    },
+    {
+      "type": "image",
+      "data": "c3ludGhldGljLWpwZWctYnl0ZXMtMg==",
+      "mimeType": "image/jpeg"
+    },
+    {
+      "type": "text",
+      "text": "{\n  \"meeting_id\": \"0b1f6c2e-4d3a-4f5b-9c8d-7e6f5a4b3c2d\",\n  \"attachment_id\": \"6e3f9a2b-4c5d-4e6f-9a7b-8c9d0e1f2a3b\",\n  \"caption\": \"Shared screen: rollout timeline\"\n}"
+    }
+  ]
+}
