@@ -99,8 +99,8 @@ workspace selected in the Granola app; `granola account get` shows which one.
 |---|---|
 | 0 | Success |
 | 2 | Usage error (bad flag, bad argument, unknown tool) |
-| 3 | Not signed in, or the session was rejected or could not be refreshed |
-| 5 | The server returned an error, including plan-limit refusals |
+| 3 | Not signed in, or the server rejected the session or its refresh token; run `granola login` |
+| 5 | The server returned an error, including plan-limit refusals, or could not be reached (also during a token refresh) |
 
 ## Rate limits
 

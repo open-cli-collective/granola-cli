@@ -335,6 +335,34 @@ func TestFailedRefreshIsAuthError(t *testing.T) {
 	}
 }
 
+func TestTransientRefreshFailureIsNotAuthError(t *testing.T) {
+	cases := []struct {
+		name  string
+		setup func(f *fakeGranola)
+		want  int
+	}{
+		{name: "token endpoint 503", setup: func(f *fakeGranola) { f.refreshStatus = http.StatusServiceUnavailable }, want: 5},
+		{name: "token endpoint 429", setup: func(f *fakeGranola) { f.refreshStatus = http.StatusTooManyRequests }, want: 5},
+		{name: "server unreachable", setup: func(f *fakeGranola) { f.srv.Close() }, want: 5},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			f := newFakeGranola(t)
+			setupTest(t, f)
+			storeSession(t, f, time.Now().Add(-time.Minute))
+			tc.setup(f)
+			_, stderr, code := runCLI(t, "account", "get")
+			if code != tc.want {
+				t.Fatalf("exit %d, want %d; stderr: %s", code, tc.want, stderr)
+			}
+			mustContain(t, stderr, "refreshing the access token failed")
+			if strings.Contains(stderr, "granola login") {
+				t.Fatalf("a transient failure told the user to sign in again: %s", stderr)
+			}
+		})
+	}
+}
+
 func TestLoginRunsDiscoveryRegistrationAndPKCE(t *testing.T) {
 	f := newFakeGranola(t)
 	setupTest(t, f)

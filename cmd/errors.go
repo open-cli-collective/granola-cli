@@ -16,7 +16,8 @@ func usageErrorf(format string, args ...any) error {
 }
 
 // classifyError maps errors to the family's exit codes: 2 usage, 3 auth or
-// config, 5 upstream (the server returned an error or a tool reported one).
+// config, 5 upstream (the server returned an error, a tool reported one, or
+// the token endpoint failed without rejecting the session).
 func classifyError(err error) error {
 	if err == nil || clierr.CodeOf(err) != int(clierr.CodeGeneric) {
 		return err
@@ -28,7 +29,7 @@ func classifyError(err error) error {
 	// message that happens to contain a cobra phrase is not misread.
 	var toolErr *mcpclient.ToolError
 	var rpcErr *jsonrpc.Error
-	if errors.As(err, &toolErr) || errors.As(err, &rpcErr) {
+	if errors.Is(err, mcpclient.ErrTokenRefresh) || errors.As(err, &toolErr) || errors.As(err, &rpcErr) {
 		return clierr.Wrap(clierr.CodeUpstream, err, "")
 	}
 	if clierr.LooksLikeUsage(err) {
