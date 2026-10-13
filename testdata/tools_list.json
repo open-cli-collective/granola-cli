@@ -80,6 +80,69 @@
       "description": "Get the email, active workspace, and effective note-access scopes for the Granola account currently connected to this MCP session.",
       "annotations": {"destructiveHint": false, "idempotentHint": true, "openWorldHint": false, "readOnlyHint": true},
       "inputSchema": {"$schema": "http://json-schema.org/draft-07/schema#", "type": "object", "properties": {}}
+    },
+    {
+      "name": "get_meeting_attachment",
+      "title": "View meeting attachments",
+      "description": "Get up to 5 meeting attachments, such as screenshots of shared screens, as images in request order. Provide attachment_ids for a batch or attachment_id for one image. Each image is followed by its metadata; failed attachments return an error with their ID without discarding successful images. Attachment IDs come from the <attachments> section of get_meetings results. Use this when the description alone does not answer the user's question, for example to read a slide, chart, or code on screen.",
+      "annotations": {
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": false,
+        "readOnlyHint": true
+      },
+      "inputSchema": {
+        "$schema": "https://json-schema.org/draft/2020-12/schema",
+        "additionalProperties": false,
+        "properties": {
+          "attachment_id": {
+            "description": "Single attachment ID. Provide exactly one of attachment_id or attachment_ids.",
+            "format": "uuid",
+            "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$",
+            "type": "string"
+          },
+          "attachment_ids": {
+            "description": "Attachment IDs from the <attachment id=\"...\"> tags in get_meetings results. Provide exactly one of attachment_id or attachment_ids.",
+            "items": {
+              "format": "uuid",
+              "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$",
+              "type": "string"
+            },
+            "maxItems": 5,
+            "minItems": 1,
+            "type": "array"
+          },
+          "meeting_id": {
+            "anyOf": [
+              {
+                "format": "uuid",
+                "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12})$",
+                "type": "string"
+              },
+              {
+                "pattern": "^not_[a-zA-Z0-9]{14}$",
+                "type": "string"
+              }
+            ],
+            "description": "Meeting UUID or public note ID (not_…). Provide this or note_id."
+          },
+          "note_id": {
+            "anyOf": [
+              {
+                "format": "uuid",
+                "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12})$",
+                "type": "string"
+              },
+              {
+                "pattern": "^not_[a-zA-Z0-9]{14}$",
+                "type": "string"
+              }
+            ],
+            "description": "Alias for meeting_id. Provide exactly one of meeting_id or note_id."
+          }
+        },
+        "type": "object"
+      }
     }
   ]
 }

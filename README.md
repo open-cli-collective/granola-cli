@@ -64,13 +64,15 @@ granola config clear  # remove the stored session
 | `granola meetings list` | `list_meetings` | `--time-range this_week\|last_week\|last_30_days` (default `last_30_days`), `--mine`, `--captured-by-me[=false]`, `--participant[=false]`, `--workspace-only`, `--folder <id>` |
 | `granola meetings get <id>...` | `get_meetings` | Summary, private notes, attendees; up to 10 IDs |
 | `granola meetings transcript <id>` | `get_meeting_transcript` | Verbatim transcript |
+| `granola meetings attachments <id> <attachment-id>...` | `get_meeting_attachment` | Saves up to 5 images, such as snapshots of shared screens, as `<id>-<n>.<ext>` in `--out-dir` (default `.`); attachment IDs come from `meetings get` |
 | `granola meetings query "<question>"` | `query_granola_meetings` | Natural-language question answered by Granola, with citation links; `--meeting <id>` narrows it |
 | `granola folders list` | `list_meeting_folders` | Folder IDs for `meetings list --folder` |
 | `granola account get` | `get_account_info` | Signed-in email, active workspace, note-access scopes |
 | `granola tools list` / `tools get <name>` | `tools/list` | What the server offers this account, with input schemas |
 | `granola tools call <name> --args '<json>'` | any read-only tool | Direct call for tools or arguments without a first-class command; tools the server does not annotate `readOnlyHint` are refused before sending |
 
-Every tool command accepts `--json`. Meeting IDs are the UUIDs that
+Every tool command accepts `--json`; for `meetings attachments` it prints the
+images base64-encoded and saves no files. Meeting IDs are the UUIDs that
 `meetings list` prints.
 
 Search: the server offers no keyword or date-range search tool. `meetings
