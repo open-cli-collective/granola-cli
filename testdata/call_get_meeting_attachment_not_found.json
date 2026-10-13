@@ -1,0 +1,9 @@
+{
+  "content": [
+    {
+      "type": "text",
+      "text": "{\n  \"meeting_id\": \"0b1f6c2e-4d3a-4f5b-9c8d-7e6f5a4b3c2d\",\n  \"attachment_id\": \"00000000-0000-0000-0000-000000000000\",\n  \"error\": \"No attachment with this attachment_id in this meeting. Call get_meetings for the meeting and use an id from its <attachments> section.\"\n}"
+    }
+  ],
+  "isError": true
+}

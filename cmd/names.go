@@ -8,6 +8,7 @@ const (
 	toolQueryMeetings  = "query_granola_meetings"
 	toolListFolders    = "list_meeting_folders"
 	toolGetAccountInfo = "get_account_info"
+	toolGetAttachment  = "get_meeting_attachment"
 )
 
 // Subcommand verbs shared across command groups.
