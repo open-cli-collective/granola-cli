@@ -1,0 +1,31 @@
+schema: open-cli-identity/v1
+repo: granola-cli
+module: github.com/open-cli-collective/granola-cli
+binary: granola
+service_name: granola-cli
+goreleaser_config: .goreleaser.yml
+tag:
+  prefix: v
+  version_scheme: major_minor_run_patch
+archives:
+  name_template: "granola_v{{ .Version }}_{{ .Os }}_{{ .Arch }}"
+packages:
+  # Homebrew's own "granola" cask is the Granola desktop app, so the canonical
+  # cask uses the repo name.
+  homebrew:
+    canonical_cask: granola-cli
+  linux: { package_name: granola }
+
+# The darwin gate: with the backend override unset, the arm64 binary must
+# auto-select the macOS Keychain backend. granola has no config file, so no
+# seed config is needed.
+keychain_probe:
+  env_unset: [GRANOLA_CLI_KEYRING_BACKEND]
+  command: ["config", "show", "--json"]
+  output: json
+  assertions:
+    .backend: keychain
+    .backend_source: auto
+    .ref: granola-cli/default
+
+version_file: version.txt

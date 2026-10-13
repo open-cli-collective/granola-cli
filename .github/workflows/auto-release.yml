@@ -1,0 +1,26 @@
+name: Auto Release
+
+# On push to main, decide whether to cut a release and mint the tag. The gate
+# (release paths plus a feat/fix commit) and the version.txt + run-number tag
+# scheme live in the shared reusable workflow.
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+    inputs:
+      dry-run:
+        description: "Compute the tag but do not push it"
+        type: boolean
+        default: true
+
+permissions:
+  contents: read
+
+jobs:
+  auto-release:
+    uses: open-cli-collective/.github/.github/workflows/auto-release.yml@v1
+    with:
+      release-paths: "**.go,go.mod,go.sum,version.txt,.goreleaser.yml,packaging/**"
+      dry-run: ${{ github.event_name == 'workflow_dispatch' && (inputs.dry-run == true || inputs.dry-run == 'true') }}
+    secrets:
+      tag-token: ${{ secrets.TAP_GITHUB_TOKEN }}

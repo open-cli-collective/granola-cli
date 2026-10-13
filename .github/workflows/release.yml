@@ -1,0 +1,32 @@
+name: Release
+
+# Triggered by the tag auto-release.yml mints (or a manual tag push). The
+# shared workflow builds with GoReleaser, gates the darwin Keychain backend
+# with the manifest's keychain_probe, publishes the GitHub release, and fans
+# out to the channels packaging/identity.yml declares (Homebrew cask, Linux).
+on:
+  push:
+    tags:
+      - "v*"
+  workflow_dispatch:
+    inputs:
+      dry-run:
+        description: "Build and render without publishing"
+        type: boolean
+        default: true
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    uses: open-cli-collective/.github/.github/workflows/release.yml@v1
+    with:
+      dry-run: ${{ github.event_name == 'workflow_dispatch' && (inputs.dry-run == true || inputs.dry-run == 'true') }}
+    secrets:
+      homebrew-tap-token: ${{ secrets.TAP_GITHUB_TOKEN }}
+      linux-dispatch-token: ${{ secrets.LINUX_PACKAGES_DISPATCH_TOKEN }}
+      macos-cert-p12: ${{ secrets.MACOS_CERT_P12 }}
+      macos-cert-password: ${{ secrets.MACOS_CERT_PASSWORD }}
+      macos-cert-cn: ${{ secrets.MACOS_CERT_CN }}
+      macos-cert-leaf-sha: ${{ secrets.MACOS_CERT_LEAF_SHA }}

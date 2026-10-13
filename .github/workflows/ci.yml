@@ -1,0 +1,81 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+# Standard keyring opt-out tags (cli-common working-with-secrets.md §1.10).
+env:
+  GOFLAGS: -tags=keyring_no1password,keyring_nopassage
+
+jobs:
+  build-platform:
+    name: build (${{ matrix.os }})
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: ubuntu-latest
+            cgo: "0"
+          - os: macos-latest
+            cgo: "1"
+          - os: windows-latest
+            cgo: "0"
+    runs-on: ${{ matrix.os }}
+    env:
+      CGO_ENABLED: ${{ matrix.cgo }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: open-cli-collective/.github/actions/go-build@v1
+        with:
+          go-version-file: go.mod
+
+  build:
+    needs: [build-platform]
+    if: ${{ always() }}
+    runs-on: ubuntu-latest
+    steps:
+      - if: ${{ contains(needs.*.result, 'failure') || contains(needs.*.result, 'cancelled') }}
+        run: echo "::error::a build-platform leg failed or was cancelled" && exit 1
+
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: open-cli-collective/.github/actions/go-test@v1
+        with:
+          go-version-file: go.mod
+      - name: Smoke test the binary
+        run: make smoke
+      - name: Check module tidiness
+        run: make tidy && git diff --exit-code go.mod go.sum
+
+  lint:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: open-cli-collective/.github/actions/go-lint@v1
+        with:
+          go-version-file: go.mod
+
+  identity-check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: open-cli-collective/.github/actions/identity-check@v1
+
+  pr-title:
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: open-cli-collective/.github/actions/pr-title@v1
+        with:
+          title: ${{ github.event.pull_request.title }}
