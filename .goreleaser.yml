@@ -117,8 +117,8 @@ homebrew_casks:
     description: "Read-only command-line interface for Granola meeting notes"
     hooks:
       post:
-        install: |
-          system_command "/usr/bin/xattr", args: ["-dr", "com.apple.quarantine", "#{staged_path}/granola"]
+        install_steps: |
+          run "/usr/bin/xattr", args: ["-dr", "com.apple.quarantine", "{{ .StagedPath }}/granola"]
     caveats: |
       To sign in, run:
         granola login
