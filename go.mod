@@ -2,7 +2,7 @@ module github.com/open-cli-collective/granola-cli
 
 go 1.26
 
-toolchain go1.26.10
+toolchain go1.27.4
 
 require (
 	github.com/modelcontextprotocol/go-sdk v1.8.0
